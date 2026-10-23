@@ -102,3 +102,25 @@ test('calculateRunEarnings provides 5,000 to 8,000 coins for a 30,000 score run'
   assert.ok(run2.totalCoins >= 5000 && run2.totalCoins <= 8000, `Expected 5000-8000 coins, got ${run2.totalCoins}`);
 });
 
+test('DEFAULT_SAVE_DATA includes aiYieldOnFlash set to true by default', () => {
+  assert.strictEqual(DEFAULT_SAVE_DATA.settings.aiYieldOnFlash, true);
+});
+
+test('Traffic vehicles include 7 distinct motorbikes and 1 bicycle', () => {
+  const expectedTwoWheelers = [
+    'moto_sport',
+    'moto_naked',
+    'moto_touring',
+    'moto_cruiser',
+    'moto_adventure',
+    'moto_scooter',
+    'moto_sport_touring',
+    'bicycle',
+  ];
+  assert.equal(expectedTwoWheelers.length, 8);
+  for (const t of expectedTwoWheelers) {
+    assert.ok(t.startsWith('moto_') || t === 'bicycle');
+  }
+});
+
+

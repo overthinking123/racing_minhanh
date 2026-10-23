@@ -48,6 +48,26 @@ export interface CarCustomization {
   rimColor: string;
 }
 
+export type TrafficVehicleType =
+  | 'sedan'
+  | 'taxi'
+  | 'coupe'
+  | 'muscle'
+  | 'suv'
+  | 'truck'
+  | 'bus'
+  | 'van'
+  | 'wagon'
+  | 'pickup'
+  | 'moto_sport'
+  | 'moto_naked'
+  | 'moto_touring'
+  | 'moto_cruiser'
+  | 'moto_adventure'
+  | 'moto_scooter'
+  | 'moto_sport_touring'
+  | 'bicycle';
+
 export type GameMode = 'one_way' | 'two_way' | 'time_attack' | 'free_ride' | 'career';
 
 export type EnvironmentType = 'city' | 'highway' | 'night' | 'coastal';
@@ -123,6 +143,7 @@ export interface GameSettings {
   steeringSensitivity: number;
   useTouchControls: boolean;
   preferredCamera: 'chase' | 'cockpit';
+  aiYieldOnFlash: boolean;
 }
 
 export interface SaveData {

@@ -164,6 +164,7 @@ export class GameEngine {
     // Managers
     this.envManager = new EnvironmentManager(this.scene, this.envType, this.mode);
     this.trafficManager = new TrafficManager(this.scene, this.mode);
+    this.trafficManager.setAiYieldOnFlash(saveData.settings.aiYieldOnFlash !== false);
 
     const carDef = CAR_CATALOG.find((c) => c.id === this.carId) || CAR_CATALOG[0];
     this.vehicleController = new VehicleController(
@@ -348,6 +349,7 @@ export class GameEngine {
   public updateSettings(saveData: SaveData) {
     this.saveData = saveData;
     this.vehicleController.updateSettings(saveData.settings);
+    this.trafficManager.setAiYieldOnFlash(saveData.settings.aiYieldOnFlash !== false);
     this.envManager.setRain(!!saveData.settings.rainWeather);
     this.camera.fov = saveData.settings.fieldOfView || 60;
     this.camera.updateProjectionMatrix();
@@ -363,6 +365,7 @@ export class GameEngine {
     this.envManager.setEnvironment(env, mode);
     this.envManager.setRain(!!freshSaveData.settings.rainWeather);
     this.trafficManager.setMode(mode);
+    this.trafficManager.setAiYieldOnFlash(freshSaveData.settings.aiYieldOnFlash !== false);
 
     const carDef = CAR_CATALOG.find((c) => c.id === carId) || CAR_CATALOG[0];
     this.vehicleController.rebuildCar(

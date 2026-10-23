@@ -574,5 +574,6 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     steeringSensitivity: 1.0,
     useTouchControls: false,
     preferredCamera: 'chase',
+    aiYieldOnFlash: true,
   },
 };

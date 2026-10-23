@@ -49,16 +49,21 @@ export class TrafficManager {
   private maxVehicles = 12; // Tuned: reduced by 6 cars (from 18 to 12) for smooth navigation & high FPS
   private spawnTimer = 0;
   private spawnInterval = 1.25;
+  private aiYieldOnFlash = true;
 
   constructor(scene: THREE.Scene, mode: GameMode) {
     this.scene = scene;
     this.mode = mode;
-    this.prepopulatePool(20);
+    this.prepopulatePool(36);
   }
 
   public setMode(mode: GameMode) {
     this.mode = mode;
     this.reset();
+  }
+
+  public setAiYieldOnFlash(enabled: boolean) {
+    this.aiYieldOnFlash = enabled;
   }
 
   private prepopulatePool(count: number) {
@@ -73,6 +78,14 @@ export class TrafficManager {
       'van',
       'wagon',
       'pickup',
+      'moto_sport',
+      'moto_naked',
+      'moto_touring',
+      'moto_cruiser',
+      'moto_adventure',
+      'moto_scooter',
+      'moto_sport_touring',
+      'bicycle',
     ];
 
     for (let i = 0; i < count; i++) {
@@ -172,7 +185,15 @@ export class TrafficManager {
 
     // Vehicle speed based on type
     let baseSpeed = 70;
-    if (entity.type === 'truck') baseSpeed = 52 + Math.random() * 14;
+    if (entity.type === 'bicycle') baseSpeed = 22 + Math.random() * 4;
+    else if (entity.type === 'moto_scooter') baseSpeed = 58 + Math.random() * 10;
+    else if (entity.type === 'moto_cruiser') baseSpeed = 68 + Math.random() * 8;
+    else if (entity.type === 'moto_adventure') baseSpeed = 78 + Math.random() * 10;
+    else if (entity.type === 'moto_touring') baseSpeed = 80 + Math.random() * 10;
+    else if (entity.type === 'moto_naked') baseSpeed = 78 + Math.random() * 12;
+    else if (entity.type === 'moto_sport_touring') baseSpeed = 82 + Math.random() * 10;
+    else if (entity.type === 'moto_sport') baseSpeed = 88 + Math.random() * 10;
+    else if (entity.type === 'truck') baseSpeed = 52 + Math.random() * 14;
     else if (entity.type === 'bus') baseSpeed = 48 + Math.random() * 12;
     else if (entity.type === 'van') baseSpeed = 64 + Math.random() * 16;
     else if (entity.type === 'pickup') baseSpeed = 68 + Math.random() * 18;
@@ -221,6 +242,8 @@ export class TrafficManager {
     isPlayerFlashing: boolean,
     isPlayerHighBeam: boolean
   ) {
+    // If AI yielding on flash setting is disabled, AI maintains its lane without yielding
+    if (!this.aiYieldOnFlash) return;
     if (v.isOncoming || v.hasYieldedForFlash) return;
 
     // Check if player is directly behind this vehicle in the same lane

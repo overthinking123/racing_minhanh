@@ -242,8 +242,8 @@ export class EnvironmentManager {
     this.addDashedLine(chunk, -3.6, this.whiteMarkingMaterial);
     this.addDashedLine(chunk, 3.6, this.whiteMarkingMaterial);
 
-    // 5. Street lamps (every ~35m on sides)
-    [-CHUNK_LENGTH * 0.25, CHUNK_LENGTH * 0.25].forEach((lampZ) => {
+    // 5. Street lamps (continuous continuous spacing every 17.5m along both road edges without dark gaps)
+    [-CHUNK_LENGTH * 0.375, -CHUNK_LENGTH * 0.125, CHUNK_LENGTH * 0.125, CHUNK_LENGTH * 0.375].forEach((lampZ) => {
       this.addStreetLamp(chunk, -ROAD_WIDTH * 0.5 - 1.6, lampZ, true);
       this.addStreetLamp(chunk, ROAD_WIDTH * 0.5 + 1.6, lampZ, false);
     });
@@ -270,26 +270,52 @@ export class EnvironmentManager {
   }
 
   private addStreetLamp(parent: THREE.Group, x: number, z: number, isLeft: boolean) {
-    const poleGeo = new THREE.CylinderGeometry(0.08, 0.12, 6.5, 6);
+    const isNight = this.currentEnv === 'night';
+    const poleGeo = new THREE.CylinderGeometry(0.08, 0.14, 6.8, 8);
     const poleMat = this.barrierMaterial;
     const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.set(x, 3.25, z);
+    pole.position.set(x, 3.4, z);
 
-    // Lamp arm
-    const armGeo = new THREE.BoxGeometry(1.8, 0.08, 0.1);
+    // Lamp arm extending over the road
+    const armGeo = new THREE.BoxGeometry(2.4, 0.08, 0.1);
     const arm = new THREE.Mesh(armGeo, poleMat);
-    arm.position.set(isLeft ? x + 0.9 : x - 0.9, 6.4, z);
+    arm.position.set(isLeft ? x + 1.2 : x - 1.2, 6.7, z);
 
-    // Glowing bulb
+    // Luminaire fixture housing
+    const fixtureGeo = new THREE.BoxGeometry(0.75, 0.14, 0.35);
+    const fixture = new THREE.Mesh(fixtureGeo, poleMat);
+    const fixtureX = isLeft ? x + 2.1 : x - 2.1;
+    fixture.position.set(fixtureX, 6.65, z);
+
+    // Glowing Bi-LED streetlamp luminaire
     const bulbMat = new THREE.MeshStandardMaterial({
       color: 0xffedd5,
-      emissive: 0xfbbf24,
-      emissiveIntensity: this.currentEnv === 'night' ? 3.0 : 0.8,
+      emissive: isNight ? 0xfbbf24 : 0xfef08a,
+      emissiveIntensity: isNight ? 4.2 : 0.6,
+      roughness: 0.1,
     });
-    const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.3), bulbMat);
-    bulb.position.set(isLeft ? x + 1.6 : x - 1.6, 6.3, z);
+    const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.28), bulbMat);
+    bulb.position.set(fixtureX, 6.58, z);
 
-    parent.add(pole, arm, bulb);
+    parent.add(pole, arm, fixture, bulb);
+
+    // Ground light projection pool on the road asphalt under each lamp post
+    if (isNight) {
+      const poolGeo = new THREE.PlaneGeometry(7.5, 9.5);
+      poolGeo.rotateX(-Math.PI / 2);
+      const poolMat = new THREE.MeshBasicMaterial({
+        color: 0xfef08a,
+        transparent: true,
+        opacity: this.isRaining ? 0.22 : 0.15,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const pool = new THREE.Mesh(poolGeo, poolMat);
+      // Project pool onto the road surface near the shoulder
+      const poolX = isLeft ? -ROAD_WIDTH * 0.5 + 2.4 : ROAD_WIDTH * 0.5 - 2.4;
+      pool.position.set(poolX, 0.025, z);
+      parent.add(pool);
+    }
   }
 
   private addEnvironmentProps(chunk: THREE.Group) {

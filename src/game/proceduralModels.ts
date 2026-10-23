@@ -6,7 +6,8 @@
  */
 
 import * as THREE from 'three';
-import { CarId } from './types';
+import { CarId, TrafficVehicleType } from './types';
+export type { TrafficVehicleType };
 
 export interface CarModelInstance {
   group: THREE.Group;
@@ -28,18 +29,6 @@ export interface CarModelInstance {
   chaseCameraOffset: THREE.Vector3;
   dimensions: { width: number; height: number; length: number };
 }
-
-export type TrafficVehicleType =
-  | 'sedan'
-  | 'taxi'
-  | 'coupe'
-  | 'muscle'
-  | 'suv'
-  | 'truck'
-  | 'bus'
-  | 'van'
-  | 'wagon'
-  | 'pickup';
 
 export interface TrafficModelInstance {
   group: THREE.Group;
@@ -128,6 +117,133 @@ function createWheel(radius: number, width: number, rimColorHex: string | number
   wheel.add(hubMesh);
 
   return wheel;
+}
+
+/**
+ * Creates a slender two-wheeler tire and wheel (spoked or alloy)
+ */
+function createBikeWheel(
+  radius: number,
+  width: number,
+  rimColorHex: string | number,
+  isWireSpoke = false
+): THREE.Group {
+  const wheel = new THREE.Group();
+
+  // Rubber tire
+  const tireGeo = new THREE.CylinderGeometry(radius, radius, width, 16);
+  tireGeo.rotateZ(Math.PI / 2);
+  const tireMesh = new THREE.Mesh(tireGeo, wheelRubberMat);
+  wheel.add(tireMesh);
+
+  // Rim alloy
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: typeof rimColorHex === 'string' ? new THREE.Color(rimColorHex) : rimColorHex,
+    roughness: 0.25,
+    metalness: 0.85,
+  });
+  const innerRadius = radius * (isWireSpoke ? 0.88 : 0.72);
+  const rimGeo = new THREE.CylinderGeometry(innerRadius, innerRadius, width * 0.9, 14);
+  rimGeo.rotateZ(Math.PI / 2);
+  const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+  wheel.add(rimMesh);
+
+  // Center hub
+  const hubGeo = new THREE.CylinderGeometry(radius * 0.18, radius * 0.18, width * 1.25, 10);
+  hubGeo.rotateZ(Math.PI / 2);
+  const hub = new THREE.Mesh(hubGeo, chromeMat);
+  wheel.add(hub);
+
+  // Spokes
+  const spokeCount = isWireSpoke ? 8 : 4;
+  const spokeMat = isWireSpoke ? chromeMat : rimMat;
+  for (let i = 0; i < spokeCount; i++) {
+    const angle = (i * Math.PI) / spokeCount;
+    const spoke = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 0.35, radius * 1.6, isWireSpoke ? 0.02 : 0.04),
+      spokeMat
+    );
+    spoke.rotation.x = angle;
+    wheel.add(spoke);
+  }
+
+  return wheel;
+}
+
+/**
+ * Creates a stylized humanoid rider sitting on the motorbike or bicycle
+ */
+function createRiderFigure(
+  leanAngle: number,
+  yOffset: number,
+  zOffset: number,
+  suitColorHex: number,
+  helmetColorHex: number,
+  isBicycle = false
+): THREE.Group {
+  const rider = new THREE.Group();
+  rider.position.set(0, yOffset, zOffset);
+
+  const suitMat = new THREE.MeshStandardMaterial({
+    color: suitColorHex,
+    roughness: 0.6,
+    metalness: 0.2,
+  });
+
+  const helmetMat = new THREE.MeshStandardMaterial({
+    color: helmetColorHex,
+    roughness: 0.3,
+    metalness: 0.6,
+  });
+
+  const visorMat = new THREE.MeshStandardMaterial({
+    color: 0x09090b,
+    roughness: 0.1,
+    metalness: 0.9,
+  });
+
+  // Torso / Jacket
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.42, 0.22), suitMat);
+  torso.rotation.x = leanAngle;
+  torso.position.set(0, 0.26, 0);
+
+  // Head / Helmet
+  const helmet = new THREE.Mesh(
+    isBicycle ? new THREE.BoxGeometry(0.2, 0.14, 0.26) : new THREE.SphereGeometry(0.13, 10, 8),
+    helmetMat
+  );
+  const headZ = -Math.sin(leanAngle) * 0.28;
+  const headY = 0.48 + Math.cos(leanAngle) * 0.14;
+  helmet.position.set(0, headY, headZ);
+
+  if (!isBicycle) {
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.07, 0.1), visorMat);
+    visor.position.set(0, headY, headZ - 0.09);
+    rider.add(visor);
+  }
+
+  // Arms gripping handlebar
+  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.34), suitMat);
+  armL.position.set(-0.18, headY - 0.14, headZ - 0.16);
+  armL.rotation.y = -0.16;
+  armL.rotation.x = leanAngle * 0.6;
+
+  const armR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.34), suitMat);
+  armR.position.set(0.18, headY - 0.14, headZ - 0.16);
+  armR.rotation.y = 0.16;
+  armR.rotation.x = leanAngle * 0.6;
+
+  // Legs
+  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.18), trimDarkMat);
+  legL.position.set(-0.16, 0.1, -0.04);
+  legL.rotation.x = isBicycle ? 0.6 : 0.4;
+
+  const legR = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.18), trimDarkMat);
+  legR.position.set(0.16, 0.1, -0.04);
+  legR.rotation.x = isBicycle ? 0.3 : 0.4;
+
+  rider.add(torso, helmet, armL, armR, legL, legR);
+  return rider;
 }
 
 /**
@@ -690,196 +806,445 @@ export function buildTrafficVehicle(type: TrafficVehicleType): TrafficModelInsta
     emissiveIntensity: 0.1,
   });
 
-  // 10 Distinct Vehicle Archetypes
-  if (type === 'sedan') {
-    // Executive Sedan
-    length = 4.5;
-    width = 1.88;
-    height = 1.38;
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.6 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, length), bodyMat);
-    chassis.position.y = 0.45;
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.52, length * 0.52), glassMat);
-    cabin.position.set(0, 0.85, 0.05);
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(width * 0.84, 0.05, length * 0.44), bodyMat);
-    roof.position.set(0, 1.12, 0.05);
-    group.add(chassis, cabin, roof);
+  // Check if two-wheeler (7 Motorbikes + 1 Bicycle)
+  const isTwoWheeler = type.startsWith('moto_') || type === 'bicycle';
 
-  } else if (type === 'taxi') {
-    // Yellow City Taxi with roof sign
-    length = 4.45;
-    width = 1.86;
-    height = 1.48;
-    const taxiMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.25, metalness: 0.4 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, length), taxiMat);
-    chassis.position.y = 0.45;
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.5, length * 0.5), glassMat);
-    cabin.position.set(0, 0.82, 0.1);
-    const sign = new THREE.Mesh(
-      new THREE.BoxGeometry(0.65, 0.16, 0.28),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfef08a, emissiveIntensity: 1.2 })
-    );
-    sign.position.set(0, 1.16, 0.1);
-    group.add(chassis, cabin, sign);
+  if (isTwoWheeler) {
+    let frontRadius = 0.33;
+    let rearRadius = 0.33;
+    let wheelW = 0.14;
 
-  } else if (type === 'coupe') {
-    // Sport Coupe
-    length = 4.35;
-    width = 1.92;
-    height = 1.22;
-    const coupeMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.2, metalness: 0.7 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.42, length), coupeMat);
-    chassis.position.y = 0.4;
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.82, 0.44, length * 0.46), glassMat);
-    cabin.position.set(0, 0.74, 0.12);
-    group.add(chassis, cabin);
+    if (type === 'moto_sport') {
+      length = 2.15;
+      width = 0.78;
+      height = 1.25;
+      frontRadius = 0.32;
+      rearRadius = 0.32;
+      wheelW = 0.12;
 
-  } else if (type === 'muscle') {
-    // Heavy American Muscle
-    length = 4.7;
-    width = 2.0;
-    height = 1.34;
-    const muscleMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.35, metalness: 0.5 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.54, length), muscleMat);
-    chassis.position.y = 0.46;
-    const scoop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.8), trimDarkMat);
-    scoop.position.set(0, 0.78, -length * 0.22);
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.84, 0.48, length * 0.46), glassMat);
-    cabin.position.set(0, 0.84, 0.2);
-    group.add(chassis, scoop, cabin);
+      const fairingMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2, metalness: 0.7 });
+      const tank = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.76), fairingMat);
+      tank.position.set(0, 0.58, -0.05);
 
-  } else if (type === 'suv') {
-    // Crossover SUV
-    length = 4.75;
-    width = 2.05;
-    height = 1.72;
-    wheelRadius = 0.42;
-    const suvMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.35, metalness: 0.4 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.72, length), suvMat);
-    chassis.position.y = 0.68;
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.68, length * 0.56), glassMat);
-    cabin.position.set(0, 1.22, 0.12);
-    group.add(chassis, cabin);
+      const nose = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.65, 4), fairingMat);
+      nose.rotation.x = Math.PI / 2;
+      nose.position.set(0, 0.68, -0.72);
 
-  } else if (type === 'truck') {
-    // Heavy Box Truck
-    length = 8.6;
-    width = 2.45;
-    height = 3.3;
-    wheelRadius = 0.5;
-    wheelWidth = 0.32;
+      const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.28), glassMat);
+      windshield.position.set(0, 0.88, -0.55);
 
-    const cabMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.4, metalness: 0.3 });
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(width, 2.2, 2.5), cabMat);
-    cab.position.set(0, 1.45, -length * 0.35);
+      const clipOns = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.05, 0.08), chromeMat);
+      clipOns.position.set(0, 0.82, -0.52);
 
-    const cabGlass = new THREE.Mesh(new THREE.BoxGeometry(width * 0.92, 0.85, 0.2), glassMat);
-    cabGlass.position.set(0, 1.85, -length * 0.35 - 1.2);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.24, 0.54), fairingMat);
+      tail.position.set(0, 0.72, 0.46);
 
-    const cargoMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5, metalness: 0.2 });
-    const cargo = new THREE.Mesh(new THREE.BoxGeometry(width * 1.04, 2.8, length * 0.66), cargoMat);
-    cargo.position.set(0, 1.75, length * 0.14);
+      const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.45, 8), chromeMat);
+      exhaust.rotation.x = Math.PI / 2.3;
+      exhaust.position.set(0.24, 0.38, 0.42);
 
-    group.add(cab, cabGlass, cargo);
+      const rider = createRiderFigure(0.65, 0.62, 0.02, 0xef4444, 0x18181b);
+      group.add(tank, nose, windshield, clipOns, tail, exhaust, rider);
 
-  } else if (type === 'bus') {
-    // Public Transit Bus
-    length = 10.8;
-    width = 2.55;
-    height = 3.1;
-    wheelRadius = 0.52;
-    wheelWidth = 0.32;
+    } else if (type === 'moto_naked') {
+      length = 2.12;
+      width = 0.82;
+      height = 1.22;
+      frontRadius = 0.32;
+      rearRadius = 0.32;
+      wheelW = 0.14;
 
-    const busMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.3, metalness: 0.3 });
-    const busBody = new THREE.Mesh(new THREE.BoxGeometry(width, 2.45, length), busMat);
-    busBody.position.y = 1.62;
+      const trellisMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3, metalness: 0.6 });
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.72), trellisMat);
+      frame.position.set(0, 0.58, -0.05);
 
-    const winMesh = new THREE.Mesh(new THREE.BoxGeometry(width * 1.02, 0.85, length * 0.9), glassMat);
-    winMesh.position.set(0, 1.85, 0);
+      const engine = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.32, 0.42), trimDarkMat);
+      engine.position.set(0, 0.36, -0.05);
 
-    group.add(busBody, winMesh);
+      const handlebar = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.05, 0.08), chromeMat);
+      handlebar.position.set(0, 0.86, -0.42);
 
-  } else if (type === 'van') {
-    // Delivery Commercial Van
-    length = 5.2;
-    width = 2.05;
-    height = 2.1;
-    wheelRadius = 0.4;
-    const vanMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4, metalness: 0.3 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(width, 1.35, length), vanMat);
-    body.position.y = 1.05;
-    const windshield = new THREE.Mesh(new THREE.BoxGeometry(width * 0.9, 0.6, 0.2), glassMat);
-    windshield.position.set(0, 1.35, -length * 0.42);
-    group.add(body, windshield);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 0.44), trellisMat);
+      tail.position.set(0, 0.68, 0.44);
 
-  } else if (type === 'wagon') {
-    // Family Station Wagon
-    length = 4.8;
-    width = 1.88;
-    height = 1.44;
-    const wagonMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.3, metalness: 0.5 });
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.52, length), wagonMat);
-    chassis.position.y = 0.48;
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.54, length * 0.68), glassMat);
-    cabin.position.set(0, 0.9, 0.18);
-    group.add(chassis, cabin);
+      const rider = createRiderFigure(0.35, 0.64, 0.02, 0x27272a, 0xf97316);
+      group.add(frame, engine, handlebar, tail, rider);
+
+    } else if (type === 'moto_touring') {
+      length = 2.4;
+      width = 0.94;
+      height = 1.42;
+      frontRadius = 0.34;
+      rearRadius = 0.34;
+      wheelW = 0.16;
+
+      const tourMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.25, metalness: 0.6 });
+      const fairing = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.65, 0.7), tourMat);
+      fairing.position.set(0, 0.8, -0.45);
+
+      const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.44, 0.06), glassMat);
+      windshield.position.set(0, 1.15, -0.48);
+
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.72), trimDarkMat);
+      seat.position.set(0, 0.66, 0.08);
+
+      const pannierL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.36, 0.65), tourMat);
+      pannierL.position.set(-0.36, 0.65, 0.48);
+      const pannierR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.36, 0.65), tourMat);
+      pannierR.position.set(0.36, 0.65, 0.48);
+
+      const topBox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.32, 0.38), tourMat);
+      topBox.position.set(0, 0.92, 0.75);
+
+      const rider = createRiderFigure(0.22, 0.72, 0.0, 0x1e3a8a, 0xe2e8f0);
+      group.add(fairing, windshield, seat, pannierL, pannierR, topBox, rider);
+
+    } else if (type === 'moto_cruiser') {
+      length = 2.45;
+      width = 0.88;
+      height = 1.15;
+      frontRadius = 0.36;
+      rearRadius = 0.31;
+      wheelW = 0.16;
+
+      const cruiserMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2, metalness: 0.8 });
+      const tank = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.28, 0.62), cruiserMat);
+      tank.position.set(0, 0.6, -0.15);
+
+      const seatMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.16, 0.42), seatMat);
+      seat.position.set(0, 0.52, 0.15);
+
+      const forkL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 8), chromeMat);
+      forkL.rotation.x = -0.35;
+      forkL.position.set(-0.14, 0.58, -0.6);
+      const forkR = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 8), chromeMat);
+      forkR.rotation.x = -0.35;
+      forkR.position.set(0.14, 0.58, -0.6);
+
+      const pipes = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.85, 8), chromeMat);
+      pipes.rotation.x = Math.PI / 2;
+      pipes.position.set(0.24, 0.32, 0.32);
+
+      const rider = createRiderFigure(0.14, 0.54, -0.05, 0x18181b, 0x44403c);
+      group.add(tank, seat, forkL, forkR, pipes, rider);
+
+    } else if (type === 'moto_adventure') {
+      length = 2.32;
+      width = 0.9;
+      height = 1.5;
+      frontRadius = 0.36;
+      rearRadius = 0.33;
+      wheelW = 0.14;
+
+      const advMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.4 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.8), advMat);
+      body.position.set(0, 0.72, -0.05);
+
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.48, 4), advMat);
+      beak.rotation.x = Math.PI / 2;
+      beak.position.set(0, 0.75, -0.72);
+
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.48, 0.05), glassMat);
+      screen.position.set(0, 1.15, -0.45);
+
+      const alumMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.85 });
+      const pannierL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.4, 0.58), alumMat);
+      pannierL.position.set(-0.38, 0.75, 0.48);
+      const pannierR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.4, 0.58), alumMat);
+      pannierR.position.set(0.38, 0.75, 0.48);
+
+      const rider = createRiderFigure(0.28, 0.78, 0.02, 0xd97706, 0xf59e0b);
+      group.add(body, beak, screen, pannierL, pannierR, rider);
+
+    } else if (type === 'moto_scooter') {
+      length = 1.98;
+      width = 0.74;
+      height = 1.2;
+      frontRadius = 0.24;
+      rearRadius = 0.24;
+      wheelW = 0.11;
+
+      const scootMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.3, metalness: 0.5 });
+      const apron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.58, 0.45), scootMat);
+      apron.position.set(0, 0.62, -0.42);
+
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.5), trimDarkMat);
+      floor.position.set(0, 0.26, -0.05);
+
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.28, 0.76), trimDarkMat);
+      seat.position.set(0, 0.58, 0.24);
+
+      const rider = createRiderFigure(0.12, 0.64, 0.02, 0x0284c7, 0xf8fafc);
+      group.add(apron, floor, seat, rider);
+
+    } else if (type === 'moto_sport_touring') {
+      length = 2.26;
+      width = 0.84;
+      height = 1.34;
+      frontRadius = 0.33;
+      rearRadius = 0.33;
+      wheelW = 0.14;
+
+      const stMat = new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.25, metalness: 0.65 });
+      const fairing = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.52, 0.68), stMat);
+      fairing.position.set(0, 0.72, -0.32);
+
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.32, 0.06), glassMat);
+      screen.position.set(0, 1.02, -0.4);
+
+      const cases = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.3, 0.55), stMat);
+      cases.position.set(0, 0.65, 0.42);
+
+      const rider = createRiderFigure(0.48, 0.66, 0.02, 0x881337, 0x1e1b4b);
+      group.add(fairing, screen, cases, rider);
+
+    } else {
+      // Bicycle (Modern Urban Road Bike)
+      length = 1.76;
+      width = 0.58;
+      height = 1.1;
+      frontRadius = 0.35;
+      rearRadius = 0.35;
+      wheelW = 0.04;
+
+      const bikeFrameMat = new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.3, metalness: 0.6 });
+      const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.72, 8), bikeFrameMat);
+      topTube.rotation.x = Math.PI / 2;
+      topTube.position.set(0, 0.72, -0.05);
+
+      const downTube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.78, 8), bikeFrameMat);
+      downTube.rotation.x = -0.65;
+      downTube.position.set(0, 0.54, -0.15);
+
+      const seatTube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.58, 8), bikeFrameMat);
+      seatTube.position.set(0, 0.58, 0.2);
+
+      const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.22), trimDarkMat);
+      saddle.position.set(0, 0.82, 0.2);
+
+      const handlebars = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.03, 0.06), chromeMat);
+      handlebars.position.set(0, 0.86, -0.38);
+
+      const rider = createRiderFigure(0.55, 0.76, -0.02, 0x84cc16, 0x0284c7, true);
+      group.add(topTube, downTube, seatTube, saddle, handlebars, rider);
+    }
+
+    // Attach front & rear wheels
+    const isWire = type === 'bicycle' || type === 'moto_adventure';
+    const rimColor = type === 'moto_naked' ? 0xf97316 : 0x94a3b8;
+    const frontWheel = createBikeWheel(frontRadius, wheelW, rimColor, isWire);
+    frontWheel.position.set(0, frontRadius, -length * 0.36);
+    const rearWheel = createBikeWheel(rearRadius, wheelW, rimColor, isWire);
+    rearWheel.position.set(0, rearRadius, length * 0.36);
+
+    group.add(frontWheel, rearWheel);
+    wheels.push(frontWheel, rearWheel);
+
+    // Front Headlight (safety LED or dual bi-projectors)
+    const hlW = type === 'bicycle' ? 0.1 : 0.32;
+    const hlH = type === 'bicycle' ? 0.08 : 0.12;
+    const hlY = type === 'bicycle' ? 0.86 : 0.72;
+    const hl = new THREE.Mesh(new THREE.BoxGeometry(hlW, hlH, 0.08), headlightsMat);
+    hl.position.set(0, hlY, -length * 0.44);
+
+    // Rear Taillight / Safety Blinker
+    const tlW = type === 'bicycle' ? 0.08 : 0.22;
+    const tlH = type === 'bicycle' ? 0.08 : 0.09;
+    const tlY = type === 'bicycle' ? 0.78 : 0.75;
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(tlW, tlH, 0.08), brakeLightsMat);
+    tl.position.set(0, tlY, length * 0.45);
+
+    // Turn Blinkers on stalks
+    const blinkerGeo = new THREE.BoxGeometry(0.08, 0.06, 0.06);
+    const blFL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
+    blFL.position.set(-width * 0.38, hlY - 0.05, -length * 0.38);
+    const blRL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
+    blRL.position.set(-width * 0.38, tlY - 0.05, length * 0.42);
+
+    const blFR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
+    blFR.position.set(width * 0.38, hlY - 0.05, -length * 0.38);
+    const blRR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
+    blRR.position.set(width * 0.38, tlY - 0.05, length * 0.42);
+
+    group.add(hl, tl, blFL, blRL, blFR, blRR);
 
   } else {
-    // Heavy 4x4 Pickup Truck
-    length = 5.4;
-    width = 2.15;
-    height = 1.82;
-    wheelRadius = 0.46;
-    wheelWidth = 0.32;
-    const pickupMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.45, metalness: 0.4 });
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(width, 0.8, length * 0.55), pickupMat);
-    cab.position.set(0, 0.8, -length * 0.18);
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.65, length * 0.42), glassMat);
-    cabin.position.set(0, 1.38, -length * 0.15);
-    const bed = new THREE.Mesh(new THREE.BoxGeometry(width, 0.55, length * 0.45), pickupMat);
-    bed.position.set(0, 0.7, length * 0.26);
-    group.add(cab, cabin, bed);
-  }
+    // 10 Distinct Vehicle Archetypes (Cars, SUVs, Trucks, Buses)
+    if (type === 'sedan') {
+      length = 4.5;
+      width = 1.88;
+      height = 1.38;
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.6 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, length), bodyMat);
+      chassis.position.y = 0.45;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.52, length * 0.52), glassMat);
+      cabin.position.set(0, 0.85, 0.05);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(width * 0.84, 0.05, length * 0.44), bodyMat);
+      roof.position.set(0, 1.12, 0.05);
+      group.add(chassis, cabin, roof);
 
-  // Wheels attachment
-  const zOffsets = length > 7 ? [-length * 0.35, length * 0.1, length * 0.35] : [-length * 0.32, length * 0.32];
-  zOffsets.forEach((z) => {
-    [-width * 0.46, width * 0.46].forEach((x) => {
-      const w = createWheel(wheelRadius, wheelWidth, 0x64748b);
-      w.position.set(x, wheelRadius, z);
-      group.add(w);
-      wheels.push(w);
+    } else if (type === 'taxi') {
+      length = 4.45;
+      width = 1.86;
+      height = 1.48;
+      const taxiMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.25, metalness: 0.4 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, length), taxiMat);
+      chassis.position.y = 0.45;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.5, length * 0.5), glassMat);
+      cabin.position.set(0, 0.82, 0.1);
+      const sign = new THREE.Mesh(
+        new THREE.BoxGeometry(0.65, 0.16, 0.28),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfef08a, emissiveIntensity: 1.2 })
+      );
+      sign.position.set(0, 1.16, 0.1);
+      group.add(chassis, cabin, sign);
+
+    } else if (type === 'coupe') {
+      length = 4.35;
+      width = 1.92;
+      height = 1.22;
+      const coupeMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.2, metalness: 0.7 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.42, length), coupeMat);
+      chassis.position.y = 0.4;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.82, 0.44, length * 0.46), glassMat);
+      cabin.position.set(0, 0.74, 0.12);
+      group.add(chassis, cabin);
+
+    } else if (type === 'muscle') {
+      length = 4.7;
+      width = 2.0;
+      height = 1.34;
+      const muscleMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.35, metalness: 0.5 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.54, length), muscleMat);
+      chassis.position.y = 0.46;
+      const scoop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.8), trimDarkMat);
+      scoop.position.set(0, 0.78, -length * 0.22);
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.84, 0.48, length * 0.46), glassMat);
+      cabin.position.set(0, 0.84, 0.2);
+      group.add(chassis, scoop, cabin);
+
+    } else if (type === 'suv') {
+      length = 4.75;
+      width = 2.05;
+      height = 1.72;
+      wheelRadius = 0.42;
+      const suvMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.35, metalness: 0.4 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.72, length), suvMat);
+      chassis.position.y = 0.68;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.68, length * 0.56), glassMat);
+      cabin.position.set(0, 1.22, 0.12);
+      group.add(chassis, cabin);
+
+    } else if (type === 'truck') {
+      length = 8.6;
+      width = 2.45;
+      height = 3.3;
+      wheelRadius = 0.5;
+      wheelWidth = 0.32;
+      const cabMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.4, metalness: 0.3 });
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(width, 2.2, 2.5), cabMat);
+      cab.position.set(0, 1.45, -length * 0.35);
+      const cabGlass = new THREE.Mesh(new THREE.BoxGeometry(width * 0.92, 0.85, 0.2), glassMat);
+      cabGlass.position.set(0, 1.85, -length * 0.35 - 1.2);
+      const cargoMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5, metalness: 0.2 });
+      const cargo = new THREE.Mesh(new THREE.BoxGeometry(width * 1.04, 2.8, length * 0.66), cargoMat);
+      cargo.position.set(0, 1.75, length * 0.14);
+      group.add(cab, cabGlass, cargo);
+
+    } else if (type === 'bus') {
+      length = 10.8;
+      width = 2.55;
+      height = 3.1;
+      wheelRadius = 0.52;
+      wheelWidth = 0.32;
+      const busMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.3, metalness: 0.3 });
+      const busBody = new THREE.Mesh(new THREE.BoxGeometry(width, 2.45, length), busMat);
+      busBody.position.y = 1.62;
+      const winMesh = new THREE.Mesh(new THREE.BoxGeometry(width * 1.02, 0.85, length * 0.9), glassMat);
+      winMesh.position.set(0, 1.85, 0);
+      group.add(busBody, winMesh);
+
+    } else if (type === 'van') {
+      length = 5.2;
+      width = 2.05;
+      height = 2.1;
+      wheelRadius = 0.4;
+      const vanMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4, metalness: 0.3 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(width, 1.35, length), vanMat);
+      body.position.y = 1.05;
+      const windshield = new THREE.Mesh(new THREE.BoxGeometry(width * 0.9, 0.6, 0.2), glassMat);
+      windshield.position.set(0, 1.35, -length * 0.42);
+      group.add(body, windshield);
+
+    } else if (type === 'wagon') {
+      length = 4.8;
+      width = 1.88;
+      height = 1.44;
+      const wagonMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.3, metalness: 0.5 });
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(width, 0.52, length), wagonMat);
+      chassis.position.y = 0.48;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.86, 0.54, length * 0.68), glassMat);
+      cabin.position.set(0, 0.9, 0.18);
+      group.add(chassis, cabin);
+
+    } else {
+      // Heavy 4x4 Pickup Truck
+      length = 5.4;
+      width = 2.15;
+      height = 1.82;
+      wheelRadius = 0.46;
+      wheelWidth = 0.32;
+      const pickupMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.45, metalness: 0.4 });
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(width, 0.8, length * 0.55), pickupMat);
+      cab.position.set(0, 0.8, -length * 0.18);
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(width * 0.88, 0.65, length * 0.42), glassMat);
+      cabin.position.set(0, 1.38, -length * 0.15);
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(width, 0.55, length * 0.45), pickupMat);
+      bed.position.set(0, 0.7, length * 0.26);
+      group.add(cab, cabin, bed);
+    }
+
+    // 4-Wheel car wheel attachments
+    const zOffsets = length > 7 ? [-length * 0.35, length * 0.1, length * 0.35] : [-length * 0.32, length * 0.32];
+    zOffsets.forEach((z) => {
+      [-width * 0.46, width * 0.46].forEach((x) => {
+        const w = createWheel(wheelRadius, wheelWidth, 0x64748b);
+        w.position.set(x, wheelRadius, z);
+        group.add(w);
+        wheels.push(w);
+      });
     });
-  });
 
-  // Emissive Headlights
-  const hl = new THREE.Mesh(
-    new THREE.BoxGeometry(width * 0.82, 0.14, 0.06),
-    headlightsMat
-  );
-  hl.position.set(0, 0.58, -length * 0.505);
+    // Emissive Headlights
+    const hl = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 0.82, 0.14, 0.06),
+      headlightsMat
+    );
+    hl.position.set(0, 0.58, -length * 0.505);
 
-  // Emissive Brake Lights
-  const tl = new THREE.Mesh(
-    new THREE.BoxGeometry(width * 0.82, 0.14, 0.06),
-    brakeLightsMat
-  );
-  tl.position.set(0, 0.58, length * 0.505);
+    // Emissive Brake Lights
+    const tl = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 0.82, 0.14, 0.06),
+      brakeLightsMat
+    );
+    tl.position.set(0, 0.58, length * 0.505);
 
-  // Left & Right Turn Blinkers (Front & Rear)
-  const blinkerGeo = new THREE.BoxGeometry(0.18, 0.1, 0.08);
+    // Left & Right Turn Blinkers (Front & Rear)
+    const blinkerGeo = new THREE.BoxGeometry(0.18, 0.1, 0.08);
 
-  const blFL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
-  blFL.position.set(-width * 0.44, 0.58, -length * 0.505);
-  const blRL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
-  blRL.position.set(-width * 0.44, 0.58, length * 0.505);
+    const blFL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
+    blFL.position.set(-width * 0.44, 0.58, -length * 0.505);
+    const blRL = new THREE.Mesh(blinkerGeo, blinkerLeftMat);
+    blRL.position.set(-width * 0.44, 0.58, length * 0.505);
 
-  const blFR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
-  blFR.position.set(width * 0.44, 0.58, -length * 0.505);
-  const blRR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
-  blRR.position.set(width * 0.44, 0.58, length * 0.505);
+    const blFR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
+    blFR.position.set(width * 0.44, 0.58, -length * 0.505);
+    const blRR = new THREE.Mesh(blinkerGeo, blinkerRightMat);
+    blRR.position.set(width * 0.44, 0.58, length * 0.505);
 
-  group.add(hl, tl, blFL, blRL, blFR, blRR);
+    group.add(hl, tl, blFL, blRL, blFR, blRR);
+  }
 
   return {
     group,

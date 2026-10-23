@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { X, Volume2, Monitor, Camera, Sliders, Gamepad2, Lightbulb, User } from 'lucide-react';
+import { X, Volume2, Monitor, Camera, Sliders, Gamepad2, Lightbulb, User, Navigation } from 'lucide-react';
 import { SaveData, GameSettings } from '../game/types';
 import { soundEngine } from '../game/audio';
 
@@ -50,9 +50,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-none font-racing">
-      <div className="relative w-full max-w-2xl bg-zinc-950 border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+      <div style={{ maxHeight: '86vh' }} className="relative w-full max-w-2xl bg-zinc-950 border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-zinc-900/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-zinc-900/60 shrink-0">
           <div className="flex items-center space-x-3">
             <Sliders className="w-6 h-6 text-cyan-400" />
             <div>
@@ -74,7 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* Player Profile Name */}
           <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4">
             <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">
@@ -243,11 +243,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {settings.rainWeather ? 'MƯA BẬT' : 'MƯA TẮT'}
               </button>
             </div>
+          </div>
 
-            <div className="pt-1 space-y-2.5">
-              <div className="flex items-center space-x-2 text-xs font-bold text-zinc-300">
-                <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+          {/* AI Traffic & Driving Assistant */}
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4 space-y-3.5">
+            <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+              <Navigation className="w-4 h-4" />
+              <span>Giao Thông & Trợ Lái AI</span>
+            </div>
+
+            <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/10">
+              <div className="pr-3">
+                <div className="text-xs font-bold text-white">AI Nhường Đường Khi Nháy Pha</div>
+                <div className="text-[10px] text-zinc-400">
+                  Phương tiện AI (ô tô, mô tô, xe đạp) phía trước tự động xi-nhan và tấp làn né đường khi bạn nháy pha (F / NHÁY PHA). Tắt để AI giữ nguyên làn.
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  soundEngine.playClick();
+                  onUpdateSettings((prev) => ({ ...prev, aiYieldOnFlash: prev.aiYieldOnFlash === false ? true : false }));
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
+                  settings.aiYieldOnFlash !== false ? 'bg-cyan-500 text-black font-extrabold shadow-sm' : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                {settings.aiYieldOnFlash !== false ? 'BẬT' : 'TẮT'}
+              </button>
+            </div>
+          </div>
+
+          {/* Audio Settings */}
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4 space-y-3.5">
+            <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+              <Volume2 className="w-4 h-4" />
+              <span>Âm Lượng Trò Chơi</span>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="flex justify-between text-xs font-semibold text-zinc-300">
                 <span>Âm Lượng Tổng</span>
+                <span>{Math.round((settings.masterVolume || 0.8) * 100)}%</span>
               </div>
               <input
                 type="range"
