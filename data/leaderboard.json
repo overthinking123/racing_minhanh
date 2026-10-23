@@ -1,0 +1,57 @@
+[
+  {
+    "id": "seed-1",
+    "playerId": "racer-apex",
+    "playerName": "SpeedDemon_VN",
+    "score": 38450,
+    "distanceM": 6420,
+    "carId": "supercar",
+    "carName": "Siêu Xe Vortex",
+    "nearMissCount": 38,
+    "timestamp": 1792613869227
+  },
+  {
+    "id": "seed-2",
+    "playerId": "racer-tokyo",
+    "playerName": "NightRider_99",
+    "score": 29800,
+    "distanceM": 5120,
+    "carId": "muscle",
+    "carName": "Cơ Bắp Thunder V8",
+    "nearMissCount": 29,
+    "timestamp": 1792588669227
+  },
+  {
+    "id": "seed-3",
+    "playerId": "racer-hanoi",
+    "playerName": "HanoiDrifter",
+    "score": 24650,
+    "distanceM": 4300,
+    "carId": "sport",
+    "carName": "Xe Thể Thao GT",
+    "nearMissCount": 24,
+    "timestamp": 1792559869227
+  },
+  {
+    "id": "seed-4",
+    "playerId": "racer-cyber",
+    "playerName": "CyberRacer_01",
+    "score": 18900,
+    "distanceM": 3600,
+    "carId": "rally",
+    "carName": "Rally Turbo 4WD",
+    "nearMissCount": 19,
+    "timestamp": 1792523869227
+  },
+  {
+    "id": "seed-5",
+    "playerId": "racer-city",
+    "playerName": "Saigon_Apex",
+    "score": 14200,
+    "distanceM": 2850,
+    "carId": "compact",
+    "carName": "Hatchback Đô Thị",
+    "nearMissCount": 14,
+    "timestamp": 1792469869227
+  }
+]

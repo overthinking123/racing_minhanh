@@ -1,0 +1,8 @@
+{
+  "name": "City Rush 3D - Traffic Racer",
+  "description": "High-octane 3D traffic racing game with procedural endless highways, AI traffic, cockpit & chase cameras, customizable cars, upgrades, and realistic physics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
