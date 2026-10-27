@@ -78,14 +78,6 @@ export class TrafficManager {
       'van',
       'wagon',
       'pickup',
-      'moto_sport',
-      'moto_naked',
-      'moto_touring',
-      'moto_cruiser',
-      'moto_adventure',
-      'moto_scooter',
-      'moto_sport_touring',
-      'bicycle',
     ];
 
     for (let i = 0; i < count; i++) {
@@ -183,17 +175,9 @@ export class TrafficManager {
     entity.blinkerLeftMat.emissiveIntensity = 0.1;
     entity.blinkerRightMat.emissiveIntensity = 0.1;
 
-    // Vehicle speed based on type
+    // Vehicle speed based on type (10 car types only)
     let baseSpeed = 70;
-    if (entity.type === 'bicycle') baseSpeed = 22 + Math.random() * 4;
-    else if (entity.type === 'moto_scooter') baseSpeed = 58 + Math.random() * 10;
-    else if (entity.type === 'moto_cruiser') baseSpeed = 68 + Math.random() * 8;
-    else if (entity.type === 'moto_adventure') baseSpeed = 78 + Math.random() * 10;
-    else if (entity.type === 'moto_touring') baseSpeed = 80 + Math.random() * 10;
-    else if (entity.type === 'moto_naked') baseSpeed = 78 + Math.random() * 12;
-    else if (entity.type === 'moto_sport_touring') baseSpeed = 82 + Math.random() * 10;
-    else if (entity.type === 'moto_sport') baseSpeed = 88 + Math.random() * 10;
-    else if (entity.type === 'truck') baseSpeed = 52 + Math.random() * 14;
+    if (entity.type === 'truck') baseSpeed = 52 + Math.random() * 14;
     else if (entity.type === 'bus') baseSpeed = 48 + Math.random() * 12;
     else if (entity.type === 'van') baseSpeed = 64 + Math.random() * 16;
     else if (entity.type === 'pickup') baseSpeed = 68 + Math.random() * 18;

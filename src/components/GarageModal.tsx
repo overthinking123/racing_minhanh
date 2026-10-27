@@ -17,7 +17,10 @@ interface GarageModalProps {
   onClose: () => void;
 }
 
+type VehicleCategoryFilter = 'all' | 'car' | 'moto' | 'bicycle';
+
 export const GarageModal: React.FC<GarageModalProps> = ({ saveData, onUpdateSave, onClose }) => {
+  const [categoryFilter, setCategoryFilter] = useState<VehicleCategoryFilter>('all');
   const [selectedIdx, setSelectedIdx] = useState<number>(() => {
     const idx = CAR_CATALOG.findIndex((c) => c.id === saveData.selectedCarId);
     return idx >= 0 ? idx : 0;
@@ -38,14 +41,30 @@ export const GarageModal: React.FC<GarageModalProps> = ({ saveData, onUpdateSave
 
   const effectiveStats = computeEffectiveStats(currentCar.baseStats, currentUpgrades);
 
+  const filteredCars = CAR_CATALOG.filter((c) => {
+    if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'car') return !c.id.startsWith('moto_') && c.id !== 'bicycle';
+    if (categoryFilter === 'moto') return c.id.startsWith('moto_');
+    if (categoryFilter === 'bicycle') return c.id === 'bicycle';
+    return true;
+  });
+
+  const currentFilteredIdx = filteredCars.findIndex((c) => c.id === currentCar.id);
+
   const handlePrevCar = () => {
     soundEngine.playClick();
-    setSelectedIdx((prev) => (prev > 0 ? prev - 1 : CAR_CATALOG.length - 1));
+    const nextFilteredIdx = currentFilteredIdx > 0 ? currentFilteredIdx - 1 : filteredCars.length - 1;
+    const targetCar = filteredCars[nextFilteredIdx];
+    const globalIdx = CAR_CATALOG.findIndex((c) => c.id === targetCar?.id);
+    setSelectedIdx(globalIdx >= 0 ? globalIdx : 0);
   };
 
   const handleNextCar = () => {
     soundEngine.playClick();
-    setSelectedIdx((prev) => (prev < CAR_CATALOG.length - 1 ? prev + 1 : 0));
+    const nextFilteredIdx = currentFilteredIdx < filteredCars.length - 1 ? currentFilteredIdx + 1 : 0;
+    const targetCar = filteredCars[nextFilteredIdx];
+    const globalIdx = CAR_CATALOG.findIndex((c) => c.id === targetCar?.id);
+    setSelectedIdx(globalIdx >= 0 ? globalIdx : 0);
   };
 
   const handleSelectCar = () => {
@@ -138,7 +157,7 @@ export const GarageModal: React.FC<GarageModalProps> = ({ saveData, onUpdateSave
           <div className="flex items-center space-x-3">
             <Wrench className="w-6 h-6 text-cyan-400" />
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-wider">GARAGE & BỘ SƯU TẬP XE (10 MẪU XE)</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-wider">GARAGE & BỘ SƯU TẬP PHƯƠNG TIỆN (18 MẪU XE)</h2>
               <p className="text-xs text-zinc-400">Tùy biến diện mạo, màu sơn, mâm xe và nâng cấp công suất</p>
             </div>
           </div>
@@ -166,6 +185,42 @@ export const GarageModal: React.FC<GarageModalProps> = ({ saveData, onUpdateSave
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
           {/* Left Column: Car Showcase (5 cols) */}
           <div className="md:col-span-5 flex flex-col justify-between bg-zinc-900/40 border border-white/10 rounded-2xl p-4">
+            {/* Category Filter Tabs */}
+            <div className="grid grid-cols-4 gap-1 p-1 bg-black/60 border border-white/10 rounded-xl mb-3 text-[10px] sm:text-xs font-bold">
+              {[
+                { id: 'all', label: 'TẤT CẢ (18)' },
+                { id: 'car', label: 'Ô TÔ (10)' },
+                { id: 'moto', label: 'MÔ TÔ (7)' },
+                { id: 'bicycle', label: 'XE ĐẠP (1)' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    soundEngine.playClick();
+                    setCategoryFilter(tab.id as VehicleCategoryFilter);
+                    const subset = CAR_CATALOG.filter((c) => {
+                      if (tab.id === 'all') return true;
+                      if (tab.id === 'car') return !c.id.startsWith('moto_') && c.id !== 'bicycle';
+                      if (tab.id === 'moto') return c.id.startsWith('moto_');
+                      if (tab.id === 'bicycle') return c.id === 'bicycle';
+                      return true;
+                    });
+                    if (subset.length > 0 && !subset.some((c) => c.id === currentCar.id)) {
+                      const firstIdx = CAR_CATALOG.findIndex((c) => c.id === subset[0].id);
+                      setSelectedIdx(firstIdx >= 0 ? firstIdx : 0);
+                    }
+                  }}
+                  className={`py-1.5 rounded-lg text-center transition ${
+                    categoryFilter === tab.id
+                      ? 'bg-cyan-500 text-black font-black shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Carousel Navigation */}
             <div className="flex items-center justify-between mb-4">
               <button

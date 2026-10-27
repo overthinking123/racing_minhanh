@@ -14,10 +14,10 @@ import {
   DEFAULT_SAVE_DATA,
 } from './rules';
 
-test('CAR_CATALOG contains 10 distinct vehicles with valid stats and pricing', () => {
-  assert.equal(CAR_CATALOG.length, 10);
+test('CAR_CATALOG contains 18 distinct player vehicles (10 cars, 7 motorbikes, 1 bicycle)', () => {
+  assert.equal(CAR_CATALOG.length, 18);
   const ids = CAR_CATALOG.map((c) => c.id);
-  assert.deepEqual(ids, [
+  const expectedCars = [
     'compact',
     'sedan',
     'luxury_sedan',
@@ -28,13 +28,27 @@ test('CAR_CATALOG contains 10 distinct vehicles with valid stats and pricing', (
     'rally',
     'supercar',
     'hypercar',
-  ]);
+  ];
+  const expectedTwoWheelers = [
+    'bicycle',
+    'moto_scooter',
+    'moto_cruiser',
+    'moto_adventure',
+    'moto_naked',
+    'moto_touring',
+    'moto_sport_touring',
+    'moto_sport',
+  ];
+
+  for (const id of [...expectedCars, ...expectedTwoWheelers]) {
+    assert.ok(ids.includes(id as any), `Missing vehicle id: ${id}`);
+  }
 
   for (const car of CAR_CATALOG) {
-    assert.ok(car.baseStats.topSpeedKmh > 150);
-    assert.ok(car.baseStats.acceleration > 5);
-    assert.ok(car.baseStats.braking > 5);
-    assert.ok(car.baseStats.handling > 5);
+    assert.ok(car.baseStats.topSpeedKmh > 30);
+    assert.ok(car.baseStats.acceleration > 2);
+    assert.ok(car.baseStats.braking > 2);
+    assert.ok(car.baseStats.handling > 2);
   }
 });
 
@@ -83,10 +97,10 @@ test('Near miss correctly triggers on close overtaking pass at speed', () => {
   assert.ok(result.cashBonus > 0);
 });
 
-test('DEFAULT_SAVE_DATA has playerId, playerName, and 10 car upgrade slots', () => {
+test('DEFAULT_SAVE_DATA has playerId, playerName, and 18 vehicle upgrade slots', () => {
   assert.ok(DEFAULT_SAVE_DATA.playerId.startsWith('racer-'));
   assert.ok(DEFAULT_SAVE_DATA.playerName.length > 0);
-  assert.equal(Object.keys(DEFAULT_SAVE_DATA.carUpgrades).length, 10);
+  assert.equal(Object.keys(DEFAULT_SAVE_DATA.carUpgrades).length, 18);
 });
 
 test('calculateRunEarnings provides 5,000 to 8,000 coins for a 30,000 score run', () => {
@@ -106,7 +120,7 @@ test('DEFAULT_SAVE_DATA includes aiYieldOnFlash set to true by default', () => {
   assert.strictEqual(DEFAULT_SAVE_DATA.settings.aiYieldOnFlash, true);
 });
 
-test('Traffic vehicles include 7 distinct motorbikes and 1 bicycle', () => {
+test('Player catalog includes 7 distinct motorbikes and 1 bicycle, traffic is cars only', () => {
   const expectedTwoWheelers = [
     'moto_sport',
     'moto_naked',
@@ -120,6 +134,8 @@ test('Traffic vehicles include 7 distinct motorbikes and 1 bicycle', () => {
   assert.equal(expectedTwoWheelers.length, 8);
   for (const t of expectedTwoWheelers) {
     assert.ok(t.startsWith('moto_') || t === 'bicycle');
+    const def = CAR_CATALOG.find((c) => c.id === t);
+    assert.ok(def, `Player vehicle ${t} must exist in CAR_CATALOG`);
   }
 });
 

@@ -280,7 +280,8 @@ export class GameEngine {
     const dom = this.renderer.domElement;
 
     dom.addEventListener('pointerdown', (e) => {
-      // Primary button
+      // Restrict camera drag exclusively to mouse events so touchscreen touches don't throw the camera
+      if (e.pointerType !== 'mouse') return;
       if (e.button === 0) {
         this.isPointerDown = true;
         this.lastPointerX = e.clientX;
@@ -307,6 +308,30 @@ export class GameEngine {
 
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
+
+    // Clear inputs when window loses focus to prevent stuck driving controls
+    window.addEventListener('blur', () => this.resetInputs());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.resetInputs();
+    });
+  }
+
+  public resetInputs() {
+    this.inputs.accelerate = false;
+    this.inputs.brake = false;
+    this.inputs.steerLeft = false;
+    this.inputs.steerRight = false;
+    this.inputs.handbrake = false;
+    this.inputs.nitro = false;
+    this.inputs.horn = false;
+    this.touchInputs.accelerate = false;
+    this.touchInputs.brake = false;
+    this.touchInputs.steerLeft = false;
+    this.touchInputs.steerRight = false;
+    this.touchInputs.handbrake = false;
+    this.touchInputs.nitro = false;
+    this.touchInputs.horn = false;
+    this.isPointerDown = false;
   }
 
   public setTouchInput(key: keyof VehicleInputs, value: boolean) {

@@ -55,6 +55,7 @@ export default function App() {
 
   const [cameraMode, setCameraMode] = useState<'chase' | 'cockpit'>('chase');
   const [headlightsOn, setHeadlightsOn] = useState(true);
+  const [headlightMode, setHeadlightMode] = useState<'off' | 'low' | 'high'>('low');
   const [nearMissEvents, setNearMissEvents] = useState<NearMissEvent[]>([]);
   const [lastGameOverSummary, setLastGameOverSummary] = useState<{
     stats: PlayerStats;
@@ -281,6 +282,14 @@ export default function App() {
     if (!engineRef.current) return;
     const newState = engineRef.current.toggleHeadlights();
     setHeadlightsOn(newState);
+    setHeadlightMode(newState ? 'low' : 'off');
+  };
+
+  const handleCycleHeadlights = () => {
+    if (!engineRef.current) return;
+    const newMode = engineRef.current.cycleHeadlights();
+    setHeadlightMode(newMode);
+    setHeadlightsOn(newMode !== 'off');
   };
 
   const handleFlashHeadlights = () => {
@@ -391,11 +400,13 @@ export default function App() {
           mode={saveData.selectedMode}
           cameraMode={cameraMode}
           headlightsOn={headlightsOn}
+          headlightMode={headlightMode}
           nearMissEvents={nearMissEvents}
           isWrongWay={isWrongWayActive}
           onPause={handlePause}
           onToggleCamera={handleToggleCamera}
           onToggleHeadlights={handleToggleHeadlights}
+          onCycleHeadlights={handleCycleHeadlights}
           onFlashHeadlights={handleFlashHeadlights}
           onHonk={handleHonk}
           onTouchInput={handleTouchInput}

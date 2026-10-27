@@ -81,8 +81,8 @@ export class VehicleController {
     this.customization = customization;
     this.settings = settings;
     this.cameraMode = initialCameraMode;
-    this.headlightMode = settings.headlightAutoOn ? 'low' : 'off';
-    this.headlightsOn = this.headlightMode !== 'off';
+    this.headlightMode = settings.headlightAutoOn ? (settings.preferredHeadlightMode || 'low') : 'off';
+    this.headlightsOn = (this.headlightMode as string) !== 'off';
     this.isRaining = !!settings.rainWeather;
 
     this.model = buildPlayerCar(
@@ -402,9 +402,11 @@ export class VehicleController {
     // 7. Update 3D Model position and rotations
     this.model.group.position.copy(this.position);
 
-    const bodyRoll = -this.velocityX * 0.02;
+    // Two-wheelers bank/lean realistically when carving turns
+    const isTwoWheeler = this.carDef.id.startsWith('moto_') || this.carDef.id === 'bicycle';
+    const bodyRoll = isTwoWheeler ? -this.velocityX * 0.12 : -this.velocityX * 0.02;
     const bodyPitch = inputs.accelerate ? 0.015 : isBraking ? -0.025 : 0;
-    const bodyYaw = -this.steerAngle * 0.25;
+    const bodyYaw = -this.steerAngle * (isTwoWheeler ? 0.18 : 0.25);
 
     this.model.group.rotation.set(bodyPitch, bodyYaw, bodyRoll);
 

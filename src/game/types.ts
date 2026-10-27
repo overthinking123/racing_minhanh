@@ -12,7 +12,15 @@ export type CarId =
   | 'coupe'
   | 'rally'
   | 'supercar'
-  | 'hypercar';
+  | 'hypercar'
+  | 'moto_sport'
+  | 'moto_naked'
+  | 'moto_touring'
+  | 'moto_cruiser'
+  | 'moto_adventure'
+  | 'moto_scooter'
+  | 'moto_sport_touring'
+  | 'bicycle';
 
 export interface CarStats {
   topSpeedKmh: number;   // Max speed in km/h
@@ -58,15 +66,7 @@ export type TrafficVehicleType =
   | 'bus'
   | 'van'
   | 'wagon'
-  | 'pickup'
-  | 'moto_sport'
-  | 'moto_naked'
-  | 'moto_touring'
-  | 'moto_cruiser'
-  | 'moto_adventure'
-  | 'moto_scooter'
-  | 'moto_sport_touring'
-  | 'bicycle';
+  | 'pickup';
 
 export type GameMode = 'one_way' | 'two_way' | 'time_attack' | 'free_ride' | 'career';
 
@@ -144,6 +144,7 @@ export interface GameSettings {
   useTouchControls: boolean;
   preferredCamera: 'chase' | 'cockpit';
   aiYieldOnFlash: boolean;
+  preferredHeadlightMode: 'low' | 'high'; // 'low' is Bi-LED Cos (chiếu gần), 'high' is Bi-Laser Pha (chiếu xa)
 }
 
 export interface SaveData {

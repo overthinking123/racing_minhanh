@@ -205,7 +205,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4 space-y-3.5">
             <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
               <Lightbulb className="w-4 h-4" />
-              <span>Đèn Pha Chiếu Sáng</span>
+              <span>Đèn Pha Chiếu Sáng (Công Nghệ Aozoom)</span>
+            </div>
+
+            {/* Preferred Headlight Mode Selection (Bi-LED Cos vs Bi-Laser Pha) */}
+            <div className="bg-black/40 p-3 rounded-xl border border-white/10 space-y-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-xs font-bold text-white">Chế Độ Đèn Pha Mặc Định</div>
+                  <div className="text-[10px] text-zinc-400">Tùy chọn Bi-LED Cos (chiếu gần) hoặc Bi-Laser Pha (chiếu xa)</div>
+                </div>
+                <div className="text-[11px] font-mono font-black text-cyan-400">
+                  {settings.preferredHeadlightMode === 'high' ? 'PHA CHIẾU XA' : 'COS CHIẾU GẦN'}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    soundEngine.playClick();
+                    onUpdateSettings((prev) => ({ ...prev, preferredHeadlightMode: 'low' }));
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                    (settings.preferredHeadlightMode || 'low') === 'low'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md ring-1 ring-amber-400/30'
+                      : 'bg-black/40 border-white/10 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-1 mb-0.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Bi-LED Cos (Chiếu gần)</span>
+                  </div>
+                  <div className="text-[10px] text-zinc-400 font-normal">Vùng sáng rộng, tập trung mặt đường 55m, chống lóa xe đối diện</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundEngine.playClick();
+                    onUpdateSettings((prev) => ({ ...prev, preferredHeadlightMode: 'high' }));
+                  }}
+                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                    settings.preferredHeadlightMode === 'high'
+                      ? 'bg-blue-600/25 border-blue-400 text-blue-300 shadow-md ring-1 ring-blue-400/30'
+                      : 'bg-black/40 border-white/10 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-1 mb-0.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Bi-Laser Pha (Chiếu xa)</span>
+                  </div>
+                  <div className="text-[10px] text-zinc-400 font-normal">Tâm laser 280m siêu sáng, xuyên đêm & mưa sương mù</div>
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/10">
@@ -256,7 +307,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="pr-3">
                 <div className="text-xs font-bold text-white">AI Nhường Đường Khi Nháy Pha</div>
                 <div className="text-[10px] text-zinc-400">
-                  Phương tiện AI (ô tô, mô tô, xe đạp) phía trước tự động xi-nhan và tấp làn né đường khi bạn nháy pha (F / NHÁY PHA). Tắt để AI giữ nguyên làn.
+                  Xe ô tô giao thông AI phía trước tự động xi-nhan và tấp làn né đường khi bạn nháy pha (F / NHÁY PHA). Tắt để AI giữ nguyên làn.
                 </div>
               </div>
               <button

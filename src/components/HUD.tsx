@@ -14,11 +14,13 @@ interface HUDProps {
   mode: GameMode;
   cameraMode: 'chase' | 'cockpit';
   headlightsOn: boolean;
+  headlightMode?: 'off' | 'low' | 'high';
   nearMissEvents: NearMissEvent[];
   isWrongWay: boolean;
   onPause: () => void;
   onToggleCamera: () => void;
   onToggleHeadlights: () => void;
+  onCycleHeadlights?: () => void;
   onFlashHeadlights: () => void;
   onHonk: () => void;
   onTouchInput: (key: 'accelerate' | 'brake' | 'steerLeft' | 'steerRight' | 'nitro', active: boolean) => void;
@@ -29,11 +31,13 @@ export const HUD: React.FC<HUDProps> = ({
   mode,
   cameraMode,
   headlightsOn,
+  headlightMode = headlightsOn ? 'low' : 'off',
   nearMissEvents,
   isWrongWay,
   onPause,
   onToggleCamera,
   onToggleHeadlights,
+  onCycleHeadlights,
   onFlashHeadlights,
   onHonk,
   onTouchInput,
@@ -41,6 +45,25 @@ export const HUD: React.FC<HUDProps> = ({
   const maxDialSpeed = 340;
   const speedRatio = Math.min(1.0, stats.speedKmh / maxDialSpeed);
   const needleRotation = -120 + speedRatio * 240;
+
+  // Pointer capture ensures finger movements don't drop out on mobile touchscreens
+  const handlePointerDown = (key: 'accelerate' | 'brake' | 'steerLeft' | 'steerRight' | 'nitro') => (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    onTouchInput(key, true);
+  };
+
+  const handlePointerUp = (key: 'accelerate' | 'brake' | 'steerLeft' | 'steerRight' | 'nitro') => (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+    onTouchInput(key, false);
+  };
 
   return (
     <div
@@ -110,19 +133,33 @@ export const HUD: React.FC<HUDProps> = ({
             <span className="hidden sm:inline text-[9px] bg-white/10 px-1 py-0.5 rounded font-mono">F</span>
           </button>
 
-          {/* Aozoom Headlights Toggle Button */}
+          {/* Aozoom Headlights Mode Button (Cos - Chiếu gần / Pha - Chiếu xa / Tắt) */}
           <button
-            onClick={onToggleHeadlights}
+            onClick={onCycleHeadlights || onToggleHeadlights}
             className={`flex items-center space-x-1 px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-xl transition text-[10px] sm:text-xs font-bold border touch-none ${
-              headlightsOn
+              headlightMode === 'high'
+                ? 'bg-blue-600/35 border-blue-400 text-blue-300 shadow-md shadow-blue-500/30 ring-1 ring-blue-400/50'
+                : headlightMode === 'low' || (headlightsOn && headlightMode !== 'off')
                 ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-md shadow-amber-500/20'
                 : 'bg-black/75 border-white/20 text-zinc-400 hover:text-white'
             }`}
-            title="Bật/Tắt Đèn Pha Aozoom (Phím Z hoặc X)"
-            aria-label="Bật tắt đèn pha"
+            title="Chuyển đổi: Bi-LED Cos (Chiếu gần) ➔ Bi-Laser Pha (Chiếu xa) ➔ Tắt (Phím Z/X)"
+            aria-label="Chuyển đổi chế độ đèn pha"
           >
-            <Lightbulb className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${headlightsOn ? 'text-amber-400 fill-amber-400' : 'text-zinc-400'}`} />
-            <span className="hidden sm:inline uppercase">{headlightsOn ? 'AOZOOM' : 'TẮT ĐÈN'}</span>
+            <Lightbulb className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+              headlightMode === 'high'
+                ? 'text-blue-400 fill-blue-400'
+                : headlightMode === 'low' || (headlightsOn && headlightMode !== 'off')
+                ? 'text-amber-400 fill-amber-400'
+                : 'text-zinc-400'
+            }`} />
+            <span className="uppercase text-[9px] sm:text-xs font-black">
+              {headlightMode === 'high'
+                ? 'BI-LASER PHA'
+                : headlightMode === 'low' || (headlightsOn && headlightMode !== 'off')
+                ? 'BI-LED COS'
+                : 'TẮT ĐÈN'}
+            </span>
             <span className="hidden sm:inline text-[9px] bg-white/10 px-1 py-0.5 rounded font-mono">Z</span>
           </button>
 
@@ -194,32 +231,18 @@ export const HUD: React.FC<HUDProps> = ({
         {/* Left Side: Touch Steering */}
         <div className="pointer-events-auto flex items-center space-x-1 sm:space-x-2 touch-none select-none">
           <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onTouchInput('steerLeft', true);
-            }}
-            onPointerUp={(e) => {
-              e.preventDefault();
-              onTouchInput('steerLeft', false);
-            }}
-            onPointerCancel={() => onTouchInput('steerLeft', false)}
-            onPointerLeave={() => onTouchInput('steerLeft', false)}
+            onPointerDown={handlePointerDown('steerLeft')}
+            onPointerUp={handlePointerUp('steerLeft')}
+            onPointerCancel={handlePointerUp('steerLeft')}
             className="w-13 h-13 sm:w-18 sm:h-18 bg-black/75 active:bg-cyan-600/60 border-2 border-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-extrabold shadow-2xl transition touch-none select-none"
             aria-label="Đánh lái trái"
           >
             ◀
           </button>
           <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onTouchInput('steerRight', true);
-            }}
-            onPointerUp={(e) => {
-              e.preventDefault();
-              onTouchInput('steerRight', false);
-            }}
-            onPointerCancel={() => onTouchInput('steerRight', false)}
-            onPointerLeave={() => onTouchInput('steerRight', false)}
+            onPointerDown={handlePointerDown('steerRight')}
+            onPointerUp={handlePointerUp('steerRight')}
+            onPointerCancel={handlePointerUp('steerRight')}
             className="w-13 h-13 sm:w-18 sm:h-18 bg-black/75 active:bg-cyan-600/60 border-2 border-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-extrabold shadow-2xl transition touch-none select-none"
             aria-label="Đánh lái phải"
           >
@@ -291,16 +314,9 @@ export const HUD: React.FC<HUDProps> = ({
         {/* Right Side: Touch Boost, Brake, Gas */}
         <div className="pointer-events-auto flex flex-col items-end space-y-1 touch-none select-none">
           <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onTouchInput('nitro', true);
-            }}
-            onPointerUp={(e) => {
-              e.preventDefault();
-              onTouchInput('nitro', false);
-            }}
-            onPointerCancel={() => onTouchInput('nitro', false)}
-            onPointerLeave={() => onTouchInput('nitro', false)}
+            onPointerDown={handlePointerDown('nitro')}
+            onPointerUp={handlePointerUp('nitro')}
+            onPointerCancel={handlePointerUp('nitro')}
             className="w-full h-7 sm:h-8 bg-gradient-to-r from-cyan-600 to-blue-600 active:from-cyan-400 active:to-blue-400 border border-cyan-300 rounded-lg sm:rounded-xl flex items-center justify-center space-x-1 text-white text-[9px] sm:text-[11px] font-black shadow-lg transition touch-none select-none"
             aria-label="Kích hoạt Nitro"
           >
@@ -310,16 +326,9 @@ export const HUD: React.FC<HUDProps> = ({
 
           <div className="flex items-center space-x-1 sm:space-x-2">
             <button
-              onPointerDown={(e) => {
-                e.preventDefault();
-                onTouchInput('brake', true);
-              }}
-              onPointerUp={(e) => {
-                e.preventDefault();
-                onTouchInput('brake', false);
-              }}
-              onPointerCancel={() => onTouchInput('brake', false)}
-              onPointerLeave={() => onTouchInput('brake', false)}
+              onPointerDown={handlePointerDown('brake')}
+              onPointerUp={handlePointerUp('brake')}
+              onPointerCancel={handlePointerUp('brake')}
               className="w-13 h-12 sm:w-16 sm:h-16 bg-gradient-to-t from-red-900 to-red-600 active:from-red-600 active:to-red-500 border-2 border-red-400 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center text-white text-[10px] sm:text-xs font-black shadow-2xl transition touch-none select-none"
               aria-label="Phanh xe"
             >
@@ -328,16 +337,9 @@ export const HUD: React.FC<HUDProps> = ({
             </button>
 
             <button
-              onPointerDown={(e) => {
-                e.preventDefault();
-                onTouchInput('accelerate', true);
-              }}
-              onPointerUp={(e) => {
-                e.preventDefault();
-                onTouchInput('accelerate', false);
-              }}
-              onPointerCancel={() => onTouchInput('accelerate', false)}
-              onPointerLeave={() => onTouchInput('accelerate', false)}
+              onPointerDown={handlePointerDown('accelerate')}
+              onPointerUp={handlePointerUp('accelerate')}
+              onPointerCancel={handlePointerUp('accelerate')}
               className="w-15 h-12 sm:w-18 sm:h-16 bg-gradient-to-t from-emerald-800 to-emerald-500 active:from-emerald-500 active:to-emerald-400 border-2 border-emerald-300 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center text-white text-[10px] sm:text-xs font-black shadow-2xl transition touch-none select-none"
               aria-label="Tăng ga"
             >
